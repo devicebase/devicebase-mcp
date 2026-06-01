@@ -7,7 +7,6 @@ import json
 from mcp.server.fastmcp import Context, FastMCP
 
 from devicebase_mcp.client import DevicebaseClient
-from devicebase_mcp.tools.device import extract_api_key
 
 
 def register_touch_tools(mcp: FastMCP, client: DevicebaseClient) -> None:
@@ -25,9 +24,7 @@ def register_touch_tools(mcp: FastMCP, client: DevicebaseClient) -> None:
         Returns:
             JSON response from the API.
         """
-        if ctx:
-            extract_api_key(client, ctx)
-        result = client.tap(serial, x, y)
+        result = client.tap(serial, x, y, context=ctx)
         return json.dumps(result, ensure_ascii=False)
 
     @mcp.tool()
@@ -42,9 +39,7 @@ def register_touch_tools(mcp: FastMCP, client: DevicebaseClient) -> None:
         Returns:
             JSON response from the API.
         """
-        if ctx:
-            extract_api_key(client, ctx)
-        result = client.double_tap(serial, x, y)
+        result = client.double_tap(serial, x, y, context=ctx)
         return json.dumps(result, ensure_ascii=False)
 
     @mcp.tool()
@@ -62,9 +57,7 @@ def register_touch_tools(mcp: FastMCP, client: DevicebaseClient) -> None:
         Returns:
             JSON response from the API.
         """
-        if ctx:
-            extract_api_key(client, ctx)
-        result = client.long_press(serial, x, y, duration)
+        result = client.long_press(serial, x, y, duration, context=ctx)
         return json.dumps(result, ensure_ascii=False)
 
     @mcp.tool()
@@ -90,7 +83,5 @@ def register_touch_tools(mcp: FastMCP, client: DevicebaseClient) -> None:
         Returns:
             JSON response from the API.
         """
-        if ctx:
-            extract_api_key(client, ctx)
-        result = client.swipe(serial, x1, y1, x2, y2, duration)
+        result = client.swipe(serial, x1, y1, x2, y2, duration, context=ctx)
         return json.dumps(result, ensure_ascii=False)

@@ -9,18 +9,6 @@ from mcp.server.fastmcp import Context, FastMCP
 from devicebase_mcp.client import DevicebaseClient
 
 
-def extract_api_key(client: DevicebaseClient, ctx: Context) -> None:
-    """Extract API key from request headers if present."""
-    if ctx.request_context and hasattr(ctx.request_context, "headers"):
-        auth_header = ctx.request_context.headers.get("Authorization")
-        if auth_header:
-            import re
-
-            match = re.match(r"Bearer\s+(.+)", auth_header, re.IGNORECASE)
-            if match:
-                client.set_api_key(match.group(1))
-
-
 def register_device_tools(mcp: FastMCP, client: DevicebaseClient) -> None:
     """Register device management tools."""
 
@@ -41,9 +29,9 @@ def register_device_tools(mcp: FastMCP, client: DevicebaseClient) -> None:
         Returns:
             JSON response from the API.
         """
-        if ctx:
-            extract_api_key(client, ctx)
-        result = client.list_devices(keyword=keyword, state=state, limit=limit)
+        result = client.list_devices(
+            keyword=keyword, state=state, limit=limit, context=ctx
+        )
         return json.dumps(result, ensure_ascii=False)
 
     @mcp.tool()
@@ -56,7 +44,5 @@ def register_device_tools(mcp: FastMCP, client: DevicebaseClient) -> None:
         Returns:
             JSON response from the API.
         """
-        if ctx:
-            extract_api_key(client, ctx)
-        result = client.device_info(serial)
+        result = client.device_info(serial, context=ctx)
         return json.dumps(result, ensure_ascii=False)

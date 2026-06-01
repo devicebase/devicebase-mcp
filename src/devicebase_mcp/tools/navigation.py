@@ -7,7 +7,6 @@ import json
 from mcp.server.fastmcp import Context, FastMCP
 
 from devicebase_mcp.client import DevicebaseClient
-from devicebase_mcp.tools.device import extract_api_key
 
 
 def register_navigation_tools(mcp: FastMCP, client: DevicebaseClient) -> None:
@@ -23,9 +22,7 @@ def register_navigation_tools(mcp: FastMCP, client: DevicebaseClient) -> None:
         Returns:
             JSON response from the API.
         """
-        if ctx:
-            extract_api_key(client, ctx)
-        result = client.back(serial)
+        result = client.back(serial, context=ctx)
         return json.dumps(result, ensure_ascii=False)
 
     @mcp.tool()
@@ -38,7 +35,5 @@ def register_navigation_tools(mcp: FastMCP, client: DevicebaseClient) -> None:
         Returns:
             JSON response from the API.
         """
-        if ctx:
-            extract_api_key(client, ctx)
-        result = client.home(serial)
+        result = client.home(serial, context=ctx)
         return json.dumps(result, ensure_ascii=False)

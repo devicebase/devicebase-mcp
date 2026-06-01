@@ -21,7 +21,9 @@ def main() -> None:
         port=port,
     )
 
-    # Create client with environment variable (optional, headers take precedence)
+    # Seed the client with the env-var key. Per-request ``Authorization``
+    # headers carried on incoming MCP requests take precedence; the env value
+    # is only used when the request omits the header.
     env_api_key = os.environ.get("DEVICEBASE_API_KEY")
     client = DevicebaseClient(api_key=env_api_key, base_url=base_url)
 

@@ -7,7 +7,6 @@ import json
 from mcp.server.fastmcp import Context, FastMCP
 
 from devicebase_mcp.client import DevicebaseClient
-from devicebase_mcp.tools.device import extract_api_key
 
 
 def register_text_tools(mcp: FastMCP, client: DevicebaseClient) -> None:
@@ -24,9 +23,7 @@ def register_text_tools(mcp: FastMCP, client: DevicebaseClient) -> None:
         Returns:
             JSON response from the API.
         """
-        if ctx:
-            extract_api_key(client, ctx)
-        result = client.input_text(serial, text)
+        result = client.input_text(serial, text, context=ctx)
         return json.dumps(result, ensure_ascii=False)
 
     @mcp.tool()
@@ -39,7 +36,5 @@ def register_text_tools(mcp: FastMCP, client: DevicebaseClient) -> None:
         Returns:
             JSON response from the API.
         """
-        if ctx:
-            extract_api_key(client, ctx)
-        result = client.clear_text(serial)
+        result = client.clear_text(serial, context=ctx)
         return json.dumps(result, ensure_ascii=False)

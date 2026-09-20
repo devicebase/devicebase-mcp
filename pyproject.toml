@@ -1,14 +1,14 @@
 [project]
 name = "devicebase-mcp"
-version = "0.1.0"
-description = "MCP server for Devicebase device control"
+version = "0.2.0"
+description = "MCP server for the Devicebase device automation API (mobile, browser and computer)"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
     {name = "Devicebase Team", email = "dev@devicebase.cn"}
 ]
-keywords = ["mcp", "devicebase", "mobile", "automation"]
+keywords = ["mcp", "devicebase", "mobile", "browser", "computer", "automation"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -26,6 +26,7 @@ dependencies = [
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
+    "pytest-cov>=5.0.0",
     "ruff>=0.4.0",
     "mypy>=1.10.0",
     "pre-commit>=3.7.0",

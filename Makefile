@@ -1,4 +1,4 @@
-.PHONY: install dev test lint format clean build
+.PHONY: install dev test test-cov lint format typecheck clean build watch hooks help all
 
 # Default target
 all: install
@@ -21,12 +21,12 @@ test-cov:
 
 # Lint code
 lint:
-	uv run ruff check src/
+	uv run ruff check src/ tests/
 
 # Format code
 format:
 	uv run ruff format src/
-	uv run ruff check src/ --fix
+	uv run ruff check src/ tests/ --fix
 
 # Type check
 typecheck:
@@ -44,8 +44,9 @@ build: clean
 	uv build
 
 # Development workflow
+# Re-run the tests on every save. Needs pytest-watch (`uv add --dev pytest-watch`).
 watch:
-	uv run pytest -w
+	uv run ptw .
 
 # Pre-commit hooks
 hooks:

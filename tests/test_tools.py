@@ -19,6 +19,8 @@ from devicebase_mcp.tools import register_all_tools
 from devicebase_mcp.tools.device import describe_image_format
 
 MOBILE = "db-mttul4i41di8"
+# The serial create_cloud_browser hands back before the browser has registered.
+SERIAL_PENDING = "3f2a1b4c-0000-1111-2222-333344445555"
 BROWSER = "db-mtsi49bf0mqb"
 COMPUTER = "db-mtthisv311f1"
 
@@ -52,6 +54,42 @@ DELEGATION_TABLE: list[tuple[str, tuple, str, tuple, dict]] = [
         "list_devices",
         (),
         {"keyword": "Pixel", "state": "free", "device_type": "mobile", "limit": 5},
+    ),
+    # --- Cloud browsers ---
+    (
+        "cloud_browser_quota",
+        (),
+        "cloud_browser_quota",
+        (),
+        {},
+    ),
+    (
+        "create_cloud_browser",
+        (),
+        "create_cloud_browser",
+        (),
+        {"name": None, "window_size": None, "wait_seconds": None},
+    ),
+    (
+        "create_cloud_browser",
+        ("my-browser", "1366x768", 30),
+        "create_cloud_browser",
+        (),
+        {"name": "my-browser", "window_size": "1366x768", "wait_seconds": 30},
+    ),
+    (
+        "cloud_browser_status",
+        (SERIAL_PENDING,),
+        "cloud_browser_status",
+        (SERIAL_PENDING,),
+        {},
+    ),
+    (
+        "delete_cloud_browser",
+        ("db-mtabc123",),
+        "delete_cloud_browser",
+        ("db-mtabc123",),
+        {},
     ),
     # --- Mobile ---
     (
@@ -442,7 +480,7 @@ class TestRegistration:
 
     def test_registers_the_whole_contract(self) -> None:
         tools = _tools()
-        assert len(tools) == 55
+        assert len(tools) == 59
 
         prefixes = {"mobile": 0, "browser": 0, "computer": 0}
         for name in tools:
@@ -451,9 +489,14 @@ class TestRegistration:
                     prefixes[prefix] += 1
 
         assert prefixes == {"mobile": 17, "browser": 21, "computer": 15}
-        # Two platform-agnostic tools.
+        # Platform-agnostic tools: discovery, capture, and the cloud browser
+        # lifecycle (which builds and destroys a browser rather than driving one).
         assert "list_devices" in tools
         assert "screenshot" in tools
+        assert "cloud_browser_quota" in tools
+        assert "create_cloud_browser" in tools
+        assert "cloud_browser_status" in tools
+        assert "delete_cloud_browser" in tools
 
     def test_every_tool_has_a_description(self) -> None:
         for name, tool in _tools().items():

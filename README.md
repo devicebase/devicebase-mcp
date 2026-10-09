@@ -8,7 +8,9 @@ MCP (Model Context Protocol) server for the [Devicebase](https://devicebase.cn) 
 | **browser** | Chrome / Chromium / Edge over CDP | `browser_*` (21) |
 | **computer** | macOS / Windows / Linux desktops | `computer_*` (15) |
 
-Plus two platform-agnostic tools: `list_devices` (discovery) and `screenshot` (cross-family).
+Plus four platform-agnostic tools: `list_devices` (discovery), `screenshot` (cross-family), and the cloud browser lifecycle — `create_cloud_browser`, `cloud_browser_status`, `cloud_browser_quota` and `delete_cloud_browser`.
+
+A **cloud browser** is a browser the platform runs for you on its own cluster, over `/v1/browser/*`. Unlike everything else here it is a resource rather than a device action: `create_cloud_browser` provisions a machine (and spends a quota slot), `delete_cloud_browser` destroys it for good. Both tools tell the model to ask the user first, and `list_devices` marks the difference between these and a browser attached by hand with `is_cloud`.
 
 ## Features
 
@@ -17,6 +19,7 @@ Plus two platform-agnostic tools: `list_devices` (discovery) and `screenshot` (c
 - **Browser** — navigation, DOM operations, JavaScript evaluation, tabs, keyboard
 - **Computer** — mouse, keyboard, app launch, screen size, host shell
 - **Screenshots** — for any platform, via one route the server dispatches by device type
+- **Cloud browsers** — create one when there is nothing to drive, wait for it to come up, and delete it when done (asking the user first either way)
 
 ## Requirements
 
@@ -116,7 +119,35 @@ Over HTTP a per-request `Authorization: Bearer <key>` header takes precedence ov
 | `list_devices` | List devices. Filter by `keyword`, `state`, `type`, `limit`. **Start here** — this is how you find the `serialno` every other tool needs. |
 | `screenshot` | Capture any device as base64 JPEG. Works for all three platforms. |
 
-`type` accepts a category (`mobile` / `browser` / `computer`) or a system type (`android` / `harmonyos` / `ios` / `macos` / `windows` / `linux` / `chrome` / `chromium` / `edge` / `other`). System types match the device's `os_type`, because a device row only carries the coarse type — a Chrome browser is `type=browser` with `os_type=Chrome`.
+`type` accepts a category (`mobile` / `browser` / `computer`) or a system type (`android` / `harmonyos` / `ios` / `macos` / `windows` / `linux` / `chrome` / `chromium` / `edge` / `other`). System types match the device's `os_type`, because a device row only carries the coarse type — a Chrome browser is `type=browser` with `os_type=Chrome`. A row's `is_cloud` says whether the platform built it (a cloud browser) or it was attached by hand.
+
+### Cloud browsers
+
+No serialno needed: these build and destroy a browser the platform runs for you, rather than driving one.
+
+| Tool | Description |
+|------|-------------|
+| `cloud_browser_quota` | How many cloud browsers the account may still create. |
+| `create_cloud_browser` | Create one (`name`, `window_size`, `wait_seconds`). Waits for it to come up and returns the `serialno` the other tools take, plus `alias_name` — the `name` you gave, verbatim. Always headless. **Ask the user first** — it spends a quota slot. |
+| `cloud_browser_status` | Whether it has come up yet, and under which `serialno`. "Not yet" is a normal answer (`registered: false`), so polling is quiet. |
+| `delete_cloud_browser` | Destroy it and its profile — **irreversible**, and not the same as `browser_close`. **Ask the user first.** |
+
+```text
+create_cloud_browser(name="scrape-01")
+  →  { "device_sn": "3f2a…", "serialno": "db-mtabc123",
+        "alias_name": "scrape-01", "registered": true }
+
+browser_navigate("db-mtabc123", "https://example.com")
+delete_cloud_browser("db-mtabc123")
+```
+
+A cloud browser always runs headless, and creating waits for it to register (15s
+by default; `wait_seconds=0` answers at once) so no poll loop is needed. If it has
+not come up in time the call still succeeded — `registered: false`, `serialno:
+null`, plus a `device_sn` for `cloud_browser_status`.
+
+Deletion does not wait for the machine either: the reap is queued and collected on
+the node's next heartbeat, so it succeeds even while the node is offline.
 
 ### Mobile (`mobile_*`)
 

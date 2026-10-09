@@ -14,6 +14,7 @@ from devicebase_mcp.client import (
     DevicebaseClient,
     bash_timeout,
     browser_path,
+    cloud_browser_path,
     computer_path,
     mobile_path,
     wait_timeout,
@@ -28,6 +29,8 @@ from devicebase_mcp.errors import (
 MOBILE = "db-mttul4i41di8"
 BROWSER = "db-mtsi49bf0mqb"
 COMPUTER = "db-mtthisv311f1"
+# The serial a cloud browser creation hands back, before it has registered.
+PENDING = "3f2a1b4c-0000-1111-2222-333344445555"
 
 
 def _response(payload: Any = None, *, content: bytes | None = None, status: int = 200) -> Mock:
@@ -69,6 +72,34 @@ def _headers(mock_http: MagicMock) -> dict[str, str]:
 
 # The full request contract, as (client method, args, method, path, json, params).
 REQUEST_TABLE: list[tuple[str, tuple, str, str, dict | None, dict | None]] = [
+    # --- Cloud browsers: /v1/browser/* ---
+    ("cloud_browser_quota", (), "GET", "/v1/browser/quota", None, None),
+    # Nothing given: an empty object rather than a body full of nulls.
+    ("create_cloud_browser", (), "POST", "/v1/browser/create", {}, None),
+    (
+        "create_cloud_browser",
+        ("my-browser", "1366x768", 30),
+        "POST",
+        "/v1/browser/create",
+        {"name": "my-browser", "window_size": "1366x768", "wait_seconds": 30},
+        None,
+    ),
+    (
+        "delete_cloud_browser",
+        ("db-mtabc123",),
+        "DELETE",
+        "/v1/browser/db-mtabc123",
+        None,
+        None,
+    ),
+    (
+        "cloud_browser_status",
+        (PENDING,),
+        "GET",
+        f"/v1/browser/{PENDING}/status",
+        None,
+        None,
+    ),
     # --- Mobile: /v1/{action}/{serialno} ---
     ("mobile_device_info", (MOBILE,), "POST", f"/v1/deviceinfo/{MOBILE}", None, None),
     ("mobile_tap", (MOBILE, 100, 200), "POST", f"/v1/tap/{MOBILE}", {"x": 100, "y": 200}, None),
@@ -425,8 +456,14 @@ class TestPaths:
     def test_computer_path(self) -> None:
         assert computer_path(COMPUTER, "click") == f"/api/computer/{COMPUTER}/click"
 
+    def test_cloud_browser_path(self) -> None:
+        assert cloud_browser_path("db-mtabc123") == "/v1/browser/db-mtabc123"
+
     def test_serialnos_are_url_escaped(self) -> None:
         assert mobile_path("a b/c", "tap") == "/v1/tap/a%20b%2Fc"
+        # The cloud browser identifier is caller-supplied too — a serial from
+        # creation, not only a serialno.
+        assert cloud_browser_path("a b/c") == "/v1/browser/a%20b%2Fc"
 
 
 class TestListDevices:

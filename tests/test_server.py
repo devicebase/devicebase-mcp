@@ -12,7 +12,7 @@ class TestBuildServer:
 
     def test_registers_every_tool(self) -> None:
         mcp = build_server()
-        assert len(mcp._tool_manager._tools) == 55  # noqa: SLF001
+        assert len(mcp._tool_manager._tools) == 59  # noqa: SLF001
 
     def test_reads_the_base_url_from_the_environment(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("DEVICEBASE_BASE_URL", "http://127.0.0.1:8000")

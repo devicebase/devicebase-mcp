@@ -69,6 +69,16 @@ def computer_path(serialno: str, action: str) -> str:
     return f"/api/computer/{_escape(serialno)}/{action}"
 
 
+def cloud_browser_path(identifier: str) -> str:
+    """Build ``/v1/browser/{identifier}``.
+
+    The identifier is caller-supplied — a serialno, or the ``serial`` a
+    creation returned — so unlike a device serialno it is not guaranteed to be
+    URL-safe.
+    """
+    return f"/v1/browser/{_escape(identifier)}"
+
+
 def bash_timeout(timeout_seconds: int) -> float:
     """Bound the HTTP deadline for a bash call.
 
@@ -728,3 +738,64 @@ class DevicebaseClient:
         """
         data = self.screenshot_bytes(serialno, context=context)
         return base64.b64encode(data).decode("ascii")
+
+    # --- Cloud browsers ---------------------------------------------------
+    #
+    # Platform-level rather than a device family: these build and destroy a
+    # browser the platform runs for you, over /v1/browser/*. A browser attached
+    # by hand is not one of them, and cannot be deleted through here.
+
+    def create_cloud_browser(
+        self,
+        name: str | None = None,
+        window_size: str | None = None,
+        wait_seconds: int | None = None,
+        context: Any = None,
+    ) -> dict[str, Any]:
+        """Ask the platform for a new cloud browser.
+
+        The platform picks the machine. Creation is asynchronous — the browser
+        has to start and register itself — so this waits for that (15 seconds
+        by default) and the answer carries the ``serialno`` the other tools
+        take. A wait that runs out is not a failure: see the tool docstring.
+
+        A cloud browser always runs headless; there is no field for it.
+        """
+        body: dict[str, Any] = {}
+        if name is not None:
+            body["name"] = name
+        if window_size is not None:
+            body["window_size"] = window_size
+        if wait_seconds is not None:
+            body["wait_seconds"] = wait_seconds
+        # The platform's node-call budget is 20s and the wait follows it, so
+        # this call raises its own deadline rather than aborting work the
+        # server is still doing.
+        wait = wait_seconds if wait_seconds is not None else 15
+        return self._request(
+            "POST",
+            "/v1/browser/create",
+            context=context,
+            timeout=wait + 45.0,
+            json=body,
+        )
+
+    def delete_cloud_browser(self, identifier: str, context: Any = None) -> dict[str, Any]:
+        """Destroy a cloud browser and its profile. Irreversible.
+
+        Does not wait for the machine: the platform queues the reap and the node
+        collects it on its next heartbeat, so this succeeds even while the node
+        is offline.
+        """
+        return self._request("DELETE", cloud_browser_path(identifier), context=context)
+
+    def cloud_browser_status(self, identifier: str, context: Any = None) -> dict[str, Any]:
+        """Report whether a created browser has registered itself yet.
+
+        "Not up yet" is a normal answer (``registered: false``), not an error.
+        """
+        return self._request("GET", f"{cloud_browser_path(identifier)}/status", context=context)
+
+    def cloud_browser_quota(self, context: Any = None) -> dict[str, Any]:
+        """How many cloud browsers this account may still create."""
+        return self._request("GET", "/v1/browser/quota", context=context)

@@ -8,7 +8,7 @@ MCP (Model Context Protocol) server for the [Devicebase](https://devicebase.cn) 
 | **browser** | Chrome / Chromium / Edge over CDP | `browser_*` (21) |
 | **computer** | macOS / Windows / Linux desktops | `computer_*` (15) |
 
-Plus four platform-agnostic tools: `list_devices` (discovery), `screenshot` (cross-family), and the cloud browser lifecycle — `create_cloud_browser`, `cloud_browser_status`, `cloud_browser_quota` and `delete_cloud_browser`.
+Plus six platform-agnostic tools: `list_devices` (discovery), `screenshot` (cross-family), the cloud browser lifecycle — `create_cloud_browser`, `cloud_browser_status`, `cloud_browser_quota` and `delete_cloud_browser` — and the account itself, `user_info` and `user_checkin`.
 
 A **cloud browser** is a browser the platform runs for you on its own cluster, over `/v1/browser/*`. Unlike everything else here it is a resource rather than a device action: `create_cloud_browser` provisions a machine (and spends a quota slot), `delete_cloud_browser` destroys it for good. Both tools tell the model to ask the user first, and `list_devices` marks the difference between these and a browser attached by hand with `is_cloud`.
 
@@ -148,6 +148,33 @@ null`, plus a `device_sn` for `cloud_browser_status`.
 
 Deletion does not wait for the machine either: the reap is queued and collected on
 the node's next heartbeat, so it succeeds even while the node is offline.
+
+### Account
+
+No serialno needed either: these answer for the account the API key belongs to,
+and it can only ever be the user's own. Over `/v1/user/*`.
+
+| Tool | Description |
+|------|-------------|
+| `user_info` | The account: `username` (the console name), `mobile`, `credits` (points balance), `registered_at`, and `can_checkin`. |
+| `user_checkin` | Claim today's points — 25 on the first day, +10 per consecutive day, up to 95 a day. |
+
+```text
+user_info()
+  →  { "username": "richie", "mobile": "13800138000", "credits": 1259,
+       "registered_at": "2026-01-02T03:04:05", "can_checkin": true }
+
+user_checkin()
+  →  { "success": true, "credits_earned": 25, "consecutive_days": 1,
+       "already_checked": false, "message": "签到成功！获得25积分", "credits": 1284 }
+```
+
+Claiming twice in one day is **not** an error: the second call answers
+`already_checked: true`, `credits_earned: 0` and the message "今日已签到", with
+nothing granted. That is what makes the daily check-in safe to put in a scheduled
+task — the task needs no guard and cannot double-claim. The tool docstring says so
+explicitly, and tells the model to offer setting such a task up rather than quietly
+checking in every day on its own.
 
 ### Mobile (`mobile_*`)
 

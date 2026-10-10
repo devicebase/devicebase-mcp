@@ -91,6 +91,21 @@ DELEGATION_TABLE: list[tuple[str, tuple, str, tuple, dict]] = [
         ("db-mtabc123",),
         {},
     ),
+    # --- Account ---
+    (
+        "user_info",
+        (),
+        "user_info",
+        (),
+        {},
+    ),
+    (
+        "user_checkin",
+        (),
+        "user_checkin",
+        (),
+        {},
+    ),
     # --- Mobile ---
     (
         "mobile_device_info",
@@ -480,7 +495,7 @@ class TestRegistration:
 
     def test_registers_the_whole_contract(self) -> None:
         tools = _tools()
-        assert len(tools) == 59
+        assert len(tools) == 61
 
         prefixes = {"mobile": 0, "browser": 0, "computer": 0}
         for name in tools:
@@ -497,6 +512,9 @@ class TestRegistration:
         assert "create_cloud_browser" in tools
         assert "cloud_browser_status" in tools
         assert "delete_cloud_browser" in tools
+        # The account behind the API key (name, phone, points, daily check-in).
+        assert "user_info" in tools
+        assert "user_checkin" in tools
 
     def test_every_tool_has_a_description(self) -> None:
         for name, tool in _tools().items():

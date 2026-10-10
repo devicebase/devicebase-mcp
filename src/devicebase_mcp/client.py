@@ -799,3 +799,21 @@ class DevicebaseClient:
     def cloud_browser_quota(self, context: Any = None) -> dict[str, Any]:
         """How many cloud browsers this account may still create."""
         return self._request("GET", "/v1/browser/quota", context=context)
+
+    # --- Account ----------------------------------------------------------
+    #
+    # The API key's own account rather than a device: /v1/user/* takes no
+    # serialno, since the key already says who is asking.
+
+    def user_info(self, context: Any = None) -> dict[str, Any]:
+        """The account behind the API key: name, phone, points, registration date."""
+        return self._request("GET", "/v1/user/info", context=context)
+
+    def user_checkin(self, context: Any = None) -> dict[str, Any]:
+        """Claim the daily points; claiming twice in one day grants nothing more.
+
+        An empty object rather than no body at all: the call has no parameters
+        either way, and {} is what a deployment predating the server's
+        body-less-POST tolerance also accepts.
+        """
+        return self._request("POST", "/v1/user/checkin", context=context, json={})
